@@ -42,7 +42,7 @@ function Chat({ match, history }) {
     ref.current.addEventListener('timeupdate', handleTimeUpdate)
 
     return () => ref.current.removeEventListener('timeupdate', handleTimeUpdate)
-  }, [])
+  }, [isPlaying])
 
   useEffect(() => {
     // get user via uid
