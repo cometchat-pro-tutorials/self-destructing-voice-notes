@@ -11,7 +11,7 @@ import { audioRecorder } from '../scripts'
 import { Redirect } from 'react-router-dom'
 import axios from 'axios'
 import AudioVisualizer from './audio-visualiser'
-​
+
 function Chat({ match, history }) {
   const [UID] = useState(match.params.uid)
   const [messages, setMessages] = useState([])
@@ -20,19 +20,19 @@ function Chat({ match, history }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isRedirected, setIsRedirected] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
-​
+
   const recordButtonRef = useRef()
   const recorderRef = useRef()
   const audioPlayerRef = useRef()
   const streamRef = useRef()
   const URLRef = useRef()
-​
+
   // get audio permission
   streamRef.current = navigator.mediaDevices.getUserMedia({ audio: true })
-​
+
   useEffect(() => {
     const ref = audioPlayerRef
-​
+
     const handleTimeUpdate = e => {
       if (e.target.duration === e.target.currentTime) {
         setIsPlaying(false)
@@ -40,14 +40,14 @@ function Chat({ match, history }) {
       }
     }
     ref.current.addEventListener('timeupdate', handleTimeUpdate)
-​
+
     return () => {
       if(ref.current) {
         ref.current.removeEventListener('timeupdate', handleTimeUpdate)
       }
     } 
   }, [isPlaying])
-​
+
   useEffect(() => {
     // get user via uid
     CometChat.getUser(UID).then(
@@ -58,13 +58,13 @@ function Chat({ match, history }) {
         console.log('User details fetching failed with error:', error)
       }
     )
-​
+
     // listen for messages in real-time
     const messagesRequest = new CometChat.MessagesRequestBuilder()
       .setUID(UID)
       .setLimit(100)
       .build()
-​
+
     messagesRequest.fetchPrevious().then(
       messages => {
         const filtered = messages.filter(m => m.file !== undefined)
@@ -75,11 +75,11 @@ function Chat({ match, history }) {
       }
     )
   }, [UID])
-​
+
   useEffect(() => {
     // receive messages
     const listenerID = UID
-​
+
     CometChat.addMessageListener(
       listenerID,
       new CometChat.MessageListener({
@@ -102,10 +102,10 @@ function Chat({ match, history }) {
         }
       })
     )
-​
+
     return () => CometChat.removeMessageListener(listenerID)
   }, [UID, messages])
-​
+
   const handleMouseDown = async () => {
     recordButtonRef.current.classList.replace('btn-secondary', 'btn-danger')
     streamRef.current
@@ -115,25 +115,25 @@ function Chat({ match, history }) {
       })
       .catch(err => console.log({ err }))
   }
-​
+
   const handleMouseUp = async () => {
     recordButtonRef.current.classList.replace('btn-danger', 'btn-secondary')
     const audio = await recorderRef.current.stop()
     sendAudioFile(audio.audioFile)
   }
-​
+
   const sendAudioFile = audioFile => {
     const receiverID = currentUser.uid
     const messageType = CometChat.MESSAGE_TYPE.AUDIO
     const receiverType = CometChat.RECEIVER_TYPE.USER
-​
+
     const mediaMessage = new CometChat.MediaMessage(
       receiverID,
       audioFile,
       messageType,
       receiverType
     )
-​
+
     CometChat.sendMediaMessage(mediaMessage).then(
       message => {
         setMessages([...messages, message])
@@ -143,7 +143,7 @@ function Chat({ match, history }) {
       }
     )
   }
-​
+
   const clearMessages = () => {
     messages.forEach(m => {
       CometChat.getMessageReceipts(m.id).then(
@@ -164,10 +164,10 @@ function Chat({ match, history }) {
       )
     })
   }
-​
+
   const playbackAudio = message => {
     setIsVisible(true)
-​
+
     axios(message.url, {
       method: 'get',
       responseType: 'blob'
@@ -181,7 +181,7 @@ function Chat({ match, history }) {
       })
       .catch(err => {})
   }
-​
+
   const togglePlay = player => {
     if (player.paused) {
       player.play()
@@ -191,9 +191,9 @@ function Chat({ match, history }) {
       setIsPlaying(false)
     }
   }
-​
+
   if (isRedirected) return <Redirect to='/' />
-​
+
   return (
     <div
       className='chat-page container'
@@ -296,5 +296,5 @@ function Chat({ match, history }) {
     </div>
   )
 }
-​
+
 export default Chat
