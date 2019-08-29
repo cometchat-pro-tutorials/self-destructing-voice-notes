@@ -1,8 +1,8 @@
-import React from 'react'
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom'
-import Home from './components/home'
-import Login from './components/login'
-import Chat from './components/chat'
+import React from 'react';
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import Home from './components/home';
+import Login from './components/login';
+import Chat from './components/chat';
 
 function App() {
   return (
@@ -13,7 +13,7 @@ function App() {
         <Route exact path='/chat/:uid' component={Chat} />
       </Switch>
     </Router>
-  )
+  );
 }
 
-export default App
+export default App;

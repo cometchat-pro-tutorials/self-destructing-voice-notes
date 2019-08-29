@@ -1,38 +1,38 @@
-import React, { useState } from 'react'
-import { Redirect } from 'react-router-dom'
-import { CometChat } from '@cometchat-pro/chat'
+import React, { useState } from 'react';
+import { Redirect } from 'react-router-dom';
+import { CometChat } from '@cometchat-pro/chat';
 
 function Login() {
-  const [username, setUsername] = useState('')
-  const [error, setError] = useState(null)
-  const [isRedirected, setIsRedirected] = useState(false)
-  const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const [username, setUsername] = useState('');
+  const [error, setError] = useState(null);
+  const [isRedirected, setIsRedirected] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleLogin = e => {
-    e.preventDefault()
-    const _username = username
+    e.preventDefault();
+    const _username = username;
 
-    setIsLoggingIn(true)
-    setUsername('')
+    setIsLoggingIn(true);
+    setUsername('');
 
     CometChat.login(_username, process.env.REACT_APP_COMETCHAT_API_KEY).then(
       user => {
-        localStorage.setItem('cometchat:token', user.authToken)
-        setIsLoggingIn(false)
-        setIsRedirected(true)
+        localStorage.setItem('cometchat:token', user.authToken);
+        setIsLoggingIn(false);
+        setIsRedirected(true);
       },
       error => {
-        setIsLoggingIn(false)
-        setError(error.message)
+        setIsLoggingIn(false);
+        setError(error.message);
       }
-    )
-  }
+    );
+  };
 
   const handleUsernameChange = e => {
-    setUsername(e.target.value)
-  }
+    setUsername(e.target.value);
+  };
 
-  if (isRedirected) return <Redirect to='/' />
+  if (isRedirected) return <Redirect to='/' />;
 
   return (
     <div className='container'>
@@ -65,7 +65,7 @@ function Login() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Login
+export default Login;

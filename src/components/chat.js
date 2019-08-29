@@ -1,198 +1,197 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { CometChat } from '@cometchat-pro/chat'
+import React, { useState, useEffect, useRef } from 'react';
+import { CometChat } from '@cometchat-pro/chat';
 import {
   FaMicrophone,
   FaPlay,
   FaPause,
   FaChevronLeft,
   FaSignOutAlt
-} from 'react-icons/fa'
-import { audioRecorder } from '../scripts'
-import { Redirect } from 'react-router-dom'
-import axios from 'axios'
-import AudioVisualizer from './audio-visualiser'
+} from 'react-icons/fa';
+import { audioRecorder } from '../scripts';
+import { Redirect } from 'react-router-dom';
+import axios from 'axios';
+import AudioVisualizer from './audio-visualiser';
 
 function Chat({ match, history }) {
-  const [UID] = useState(match.params.uid)
-  const [messages, setMessages] = useState([])
-  const [currentUser, setCurrentUser] = useState(null)
-  const [currentUrl, setCurrentUrl] = useState(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isRedirected, setIsRedirected] = useState(false)
-  const [isVisible, setIsVisible] = useState(true)
+  const [UID] = useState(match.params.uid);
+  const [messages, setMessages] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentMessage, setCurrentMessage] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isRedirected, setIsRedirected] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
-  const recordButtonRef = useRef()
-  const recorderRef = useRef()
-  const audioPlayerRef = useRef()
-  const streamRef = useRef()
-  const URLRef = useRef()
+  const recordButtonRef = useRef();
+  const recorderRef = useRef();
+  const audioPlayerRef = useRef();
+  const streamRef = useRef();
+  const URLRef = useRef();
 
   // get audio permission
-  streamRef.current = navigator.mediaDevices.getUserMedia({ audio: true })
+  streamRef.current = navigator.mediaDevices.getUserMedia({ audio: true });
 
   useEffect(() => {
-    const ref = audioPlayerRef
+    const ref = audioPlayerRef;
 
     const handleTimeUpdate = e => {
       if (e.target.duration === e.target.currentTime) {
-        setIsPlaying(false)
-        setIsVisible(false)
+        setIsPlaying(false);
+        setIsVisible(false);
+
+        CometChat.getMessageReceipts(currentMessage.id).then(
+          receipts => {
+            receipts.forEach(receipt => {
+              if (
+                receipt.sender.uid === currentUser.uid &&
+                receipt.readAt === undefined
+              ) {
+                return;
+              }
+              CometChat.markMessageAsRead(currentMessage);
+            });
+          },
+          error => {
+            console.log('Error in getting messag details ', error);
+          }
+        );
       }
-    }
-    ref.current.addEventListener('timeupdate', handleTimeUpdate)
+    };
+    ref.current.addEventListener('timeupdate', handleTimeUpdate);
 
     return () => {
-      if(ref.current) {
-        ref.current.removeEventListener('timeupdate', handleTimeUpdate)
+      if (ref.current) {
+        ref.current.removeEventListener('timeupdate', handleTimeUpdate);
       }
-    } 
-  }, [isPlaying])
+    };
+  }, [isPlaying, currentUser, currentMessage]);
 
   useEffect(() => {
     // get user via uid
     CometChat.getUser(UID).then(
       user => {
-        setCurrentUser(user)
+        setCurrentUser(user);
       },
       error => {
-        console.log('User details fetching failed with error:', error)
+        console.log('User details fetching failed with error:', error);
       }
-    )
+    );
 
     // listen for messages in real-time
     const messagesRequest = new CometChat.MessagesRequestBuilder()
       .setUID(UID)
       .setLimit(100)
-      .build()
+      .build();
 
     messagesRequest.fetchPrevious().then(
       messages => {
-        const filtered = messages.filter(m => m.file !== undefined)
-        setMessages(prevMessages => [...prevMessages, ...filtered])
+        const filtered = messages.filter(m => m.file !== undefined);
+        setMessages(prevMessages => [...prevMessages, ...filtered]);
       },
       error => {
-        console.log('Message fetching failed with error:', error)
+        console.log('Message fetching failed with error:', error);
       }
-    )
-  }, [UID])
+    );
+  }, [UID]);
 
   useEffect(() => {
     // receive messages
-    const listenerID = UID
+    const listenerID = UID;
 
     CometChat.addMessageListener(
       listenerID,
       new CometChat.MessageListener({
         onMediaMessageReceived: mediaMessage => {
-          setMessages(prevMessages => [...prevMessages, mediaMessage])
+          setMessages(prevMessages => [...prevMessages, mediaMessage]);
         },
-        onMessageDeleted: deletedMessage => {},
+        onMessageDeleted: deletedMessage => {
+          const filtered = messages.filter(m => m.id !== deletedMessage.id);
+          setMessages([...filtered]);
+        },
         onMessageRead: messageReceipt => {
           CometChat.deleteMessage(messageReceipt.messageId).then(
             msg => {
               const filtered = messages.filter(
                 m => m.id !== messageReceipt.messageId
-              )
-              setMessages([...filtered])
+              );
+              setMessages([...filtered]);
             },
             err => {
-              console.log({ err })
+              console.log({ err });
             }
-          )
+          );
         }
       })
-    )
+    );
 
-    return () => CometChat.removeMessageListener(listenerID)
-  }, [UID, messages])
+    return () => CometChat.removeMessageListener(listenerID);
+  }, [UID, messages]);
 
   const handleMouseDown = async () => {
-    recordButtonRef.current.classList.replace('btn-secondary', 'btn-danger')
+    recordButtonRef.current.classList.replace('btn-secondary', 'btn-danger');
     streamRef.current
       .then(async stream => {
-        recorderRef.current = await audioRecorder(stream)
-        recorderRef.current.record()
+        recorderRef.current = await audioRecorder(stream);
+        recorderRef.current.record();
       })
-      .catch(err => console.log({ err }))
-  }
+      .catch(err => console.log({ err }));
+  };
 
   const handleMouseUp = async () => {
-    recordButtonRef.current.classList.replace('btn-danger', 'btn-secondary')
-    const audio = await recorderRef.current.stop()
-    sendAudioFile(audio.audioFile)
-  }
+    recordButtonRef.current.classList.replace('btn-danger', 'btn-secondary');
+    const audio = await recorderRef.current.stop();
+    sendAudioFile(audio.audioFile);
+  };
 
   const sendAudioFile = audioFile => {
-    const receiverID = currentUser.uid
-    const messageType = CometChat.MESSAGE_TYPE.AUDIO
-    const receiverType = CometChat.RECEIVER_TYPE.USER
+    const receiverID = currentUser.uid;
+    const messageType = CometChat.MESSAGE_TYPE.AUDIO;
+    const receiverType = CometChat.RECEIVER_TYPE.USER;
 
     const mediaMessage = new CometChat.MediaMessage(
       receiverID,
       audioFile,
       messageType,
       receiverType
-    )
+    );
 
     CometChat.sendMediaMessage(mediaMessage).then(
       message => {
-        setMessages([...messages, message])
+        setMessages([...messages, message]);
       },
       error => {
-        console.log('Media message sending failed with error', error)
+        console.log('Media message sending failed with error', error);
       }
-    )
-  }
-
-  const clearMessages = () => {
-    messages.forEach(m => {
-      CometChat.getMessageReceipts(m.id).then(
-        receipts => {
-          receipts.forEach(receipt => {
-            if (
-              receipt.sender.uid === currentUser.uid &&
-              receipt.readAt === undefined
-            ) {
-              return
-            }
-            CometChat.markMessageAsRead(m)
-          })
-        },
-        error => {
-          console.log('Error in getting messag details ', error)
-        }
-      )
-    })
-  }
+    );
+  };
 
   const playbackAudio = message => {
-    setIsVisible(true)
+    setIsVisible(true);
 
     axios(message.url, {
       method: 'get',
       responseType: 'blob'
     })
       .then(res => {
-        const audioUrl = URL.createObjectURL(new Blob([res.data]))
-        audioPlayerRef.current.src = audioUrl
-        setCurrentUrl(message.url)
-        URLRef.current = audioUrl
-        togglePlay(audioPlayerRef.current)
+        const audioUrl = URL.createObjectURL(new Blob([res.data]));
+        audioPlayerRef.current.src = audioUrl;
+        setCurrentMessage(message);
+        URLRef.current = audioUrl;
+        // togglePlay(audioPlayerRef.current)
+        audioPlayerRef.current.play();
+        setIsPlaying(true);
       })
-      .catch(err => {})
-  }
+      .catch(err => {});
+  };
 
-  const togglePlay = player => {
-    if (player.paused) {
-      player.play()
-      setIsPlaying(true)
-    } else {
-      player.pause()
-      setIsPlaying(false)
-    }
-  }
+  // const togglePlay = player => {
+  //   if (player.paused) {
+  //   } else {
+  //     player.pause()
+  //     setIsPlaying(false)
+  //   }
+  // }
 
-  if (isRedirected) return <Redirect to='/' />
+  if (isRedirected) return <Redirect to='/' />;
 
   return (
     <div
@@ -211,8 +210,7 @@ function Chat({ match, history }) {
             <div className='d-flex justify-content-start'>
               <button
                 onClick={() => {
-                  history.goBack()
-                  clearMessages()
+                  history.goBack();
                 }}
                 className='btn mr-3'
                 style={{ fontWeight: '500' }}
@@ -221,15 +219,14 @@ function Chat({ match, history }) {
               </button>
               <div className=''>
                 <span className='d-block'>{currentUser.name}</span>
-                <small className='d-block'>{currentUser.status}</small>
+                {/* <small className='d-block'>{currentUser.status}</small> */}
               </div>
             </div>
             <button
               className='btn btn-light'
               onClick={() => {
-                clearMessages()
-                setIsRedirected(true)
-                localStorage.clear()
+                setIsRedirected(true);
+                localStorage.clear();
               }}
             >
               <FaSignOutAlt /> Logout
@@ -238,45 +235,49 @@ function Chat({ match, history }) {
         )}
       </div>
       <ul className='list-group-item' style={{ flex: 1 }}>
-        {messages.length > 0 ? (
-          messages.map((message, i) => (
-            <li
-              className='list-group-item d-flex align-items-center justify-content-between'
-              key={i}
-            >
-              <div className='d-flex align-items-center'>
-                <button
-                  disabled={
-                    currentUrl !== message.url && isPlaying ? 'disabled' : ''
-                  }
-                  onClick={e => playbackAudio(message, message.id)}
-                  style={{
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '50%'
-                  }}
-                  className='btn btn-secondary'
-                >
-                  {currentUrl === message.url ? (
-                    isPlaying ? (
-                      <FaPause />
+        {messages.length > 0
+          ? messages.map((message, i) => (
+              <li
+                className='list-group-item d-flex align-items-center justify-content-between'
+                key={i}
+              >
+                <div className='d-flex align-items-center'>
+                  <button
+                    disabled={
+                      currentMessage &&
+                      currentMessage.url !== message.url &&
+                      isPlaying
+                        ? 'disabled'
+                        : ''
+                    }
+                    onClick={e => playbackAudio(message, message.id)}
+                    style={{
+                      width: '50px',
+                      height: '50px',
+                      borderRadius: '50%'
+                    }}
+                    className='btn btn-secondary'
+                  >
+                    {currentMessage && currentMessage.url === message.url ? (
+                      isPlaying ? (
+                        <FaPause />
+                      ) : (
+                        <FaPlay />
+                      )
                     ) : (
                       <FaPlay />
-                    )
-                  ) : (
-                    <FaPlay />
+                    )}
+                  </button>
+                  <p className='pl-3'>{message.sender.uid}</p>
+                </div>
+                {currentMessage &&
+                  currentMessage.url === message.url &&
+                  isPlaying && (
+                    <AudioVisualizer audio={audioPlayerRef.current} />
                   )}
-                </button>
-                <p className='pl-3'>{message.sender.uid}</p>
-              </div>
-              {currentUrl === message.url && isPlaying && (
-                <AudioVisualizer audio={audioPlayerRef.current} />
-              )}
-            </li>
-          ))
-        ) : (
-          <p className='fetching...' />
-        )}
+              </li>
+            ))
+          : null}
       </ul>
       <footer
         className='text-center d-flex align-items-center'
@@ -294,7 +295,7 @@ function Chat({ match, history }) {
         </button>
       </footer>
     </div>
-  )
+  );
 }
 
-export default Chat
+export default Chat;

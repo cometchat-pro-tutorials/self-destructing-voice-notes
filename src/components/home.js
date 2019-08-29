@@ -1,95 +1,99 @@
-import React, { useEffect, useState } from 'react'
-import { Redirect } from 'react-router-dom'
-import { CometChat } from '@cometchat-pro/chat'
-import { FaSignOutAlt } from 'react-icons/fa'
+import React, { useEffect, useState } from 'react';
+import { Redirect } from 'react-router-dom';
+import { CometChat } from '@cometchat-pro/chat';
+import { FaSignOutAlt } from 'react-icons/fa';
 
 function Home({ history }) {
-  const authToken = localStorage.getItem('cometchat:token')
-  const [users, setUsers] = useState([])
-  const [isRedirected, setIsRedirected] = useState(false)
+  const authToken = localStorage.getItem('cometchat:token');
+  const [users, setUsers] = useState([]);
+  const [isRedirected, setIsRedirected] = useState(false);
 
   useEffect(() => {
     if (authToken !== null) {
       CometChat.login(authToken).then(
         user => {
-          const limit = 4
+          const limit = 4;
           const usersRequest = new CometChat.UsersRequestBuilder()
             .setLimit(limit)
-            .build()
+            .build();
 
           usersRequest.fetchNext().then(
             userList => {
-              setUsers([...userList])
+              setUsers(userList);
+              // console.log({ userList })
             },
             error => {
-              console.log('User list fetching failed with error:', error)
+              console.log('User list fetching failed with error:', error);
             }
-          )
+          );
         },
         err => {
-          console.log({ err })
+          console.log({ err });
         }
-      )
+      );
     }
-  }, [authToken])
+  }, [authToken]);
 
   useEffect(() => {
-    const listenerID = 'online_listener'
+    const listenerID = 'online_listener';
 
     CometChat.addUserListener(
       listenerID,
       new CometChat.UserListener({
         onUserOnline: onlineUser => {
-          const otherUsers = users.filter(u => u.uid !== onlineUser.uid)
-          setUsers([onlineUser, ...otherUsers])
+          const otherUsers = users.filter(u => u.uid !== onlineUser.uid);
+          setUsers([onlineUser, ...otherUsers]);
         },
         onUserOffline: offlineUser => {
-          const otherUsers = users.filter(u => u.uid !== offlineUser.uid)
-          setUsers([...otherUsers, offlineUser])
+          const targetUser = users.find(u => u.uid === offlineUser.uid);
+          if (targetUser && targetUser.uid === offlineUser.uid) {
+            const otherUsers = users.filter(u => u.uid !== offlineUser.uid);
+            setUsers([...otherUsers, offlineUser]);
+          }
         }
       })
-    )
+    );
 
-    return () => CometChat.removeUserListener(listenerID)
-  }, [users])
+    return () => CometChat.removeUserListener(listenerID);
+  }, [users]);
 
   useEffect(() => {
-    const listenerID = 'home_component'
+    const listenerID = 'home_component';
 
     CometChat.addMessageListener(
       listenerID,
       new CometChat.MessageListener({
         onMediaMessageReceived: mediaMessage => {
-          const _users = [...users]
+          const _users = [...users];
 
           const selectedUser = _users.find(
             u => u.uid === mediaMessage.sender.uid
-          )
+          );
 
           selectedUser.messageCount = selectedUser.messageCount
             ? selectedUser.messageCount + 1
-            : 1
+            : 1;
 
-          const filtered = [..._users].filter(u => u.uid !== selectedUser.uid)
+          const filtered = [..._users].filter(u => u.uid !== selectedUser.uid);
 
-          setUsers([selectedUser, ...filtered])
+          setUsers([selectedUser, ...filtered]);
         },
         onMessageDeleted: deletedMessage => {},
         onMessageRead: messageReceipt => {
           CometChat.deleteMessage(messageReceipt.messageId).then(
             msg => {},
             err => {
-              console.log({ err })
+              console.log({ err });
             }
-          )
+          );
         }
       })
-    )
+    );
 
-    return () => CometChat.removeMessageListener(listenerID)
-  }, [users])
+    return () => CometChat.removeMessageListener(listenerID);
+  }, [users]);
 
-  if (authToken === null || isRedirected) return <Redirect to='/login' />
+  if (authToken === null || isRedirected) return <Redirect to='/login' />;
 
   return (
     <div className='container'>
@@ -101,8 +105,8 @@ function Home({ history }) {
         <button
           className='btn btn-light mb-2'
           onClick={() => {
-            localStorage.clear()
-            setIsRedirected(true)
+            localStorage.clear();
+            setIsRedirected(true);
           }}
         >
           <FaSignOutAlt /> Logout
@@ -148,7 +152,7 @@ function Home({ history }) {
         )}
       </ul>
     </div>
-  )
+  );
 }
 
-export default Home
+export default Home;

@@ -2,7 +2,6 @@
 
 In this app, we're going to build a self destructing voice chat app. The app deletes the message after the recipient has listened to the message and left the chat screen.
 
-
 ### Screenshots
 
 ![Login Page](screenshots/login.jpg)

@@ -1,26 +1,26 @@
 export const audioRecorder = stream =>
   new Promise(async resolve => {
-    const mediaRecorder = await new MediaRecorder(stream)
-    const audioChunks = []
+    const mediaRecorder = await new MediaRecorder(stream);
+    const audioChunks = [];
 
     mediaRecorder.addEventListener('dataavailable', event => {
-      audioChunks.push(event.data)
-    })
+      audioChunks.push(event.data);
+    });
 
-    const record = () => mediaRecorder.start()
+    const record = () => mediaRecorder.start();
 
     const stop = () =>
       new Promise(resolve => {
         mediaRecorder.addEventListener('stop', () => {
-          const audioBlob = new Blob(audioChunks)
+          const audioBlob = new Blob(audioChunks);
           const audioFile = new File([audioBlob], 'voice note', {
             type: 'audio/wav'
-          })
-          resolve({ audioFile })
-        })
+          });
+          resolve({ audioFile });
+        });
 
-        mediaRecorder.stop()
-      })
+        mediaRecorder.stop();
+      });
 
-    resolve({ record, stop })
-  })
+    resolve({ record, stop });
+  });
