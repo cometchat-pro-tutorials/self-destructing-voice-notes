@@ -176,20 +176,11 @@ function Chat({ match, history }) {
         audioPlayerRef.current.src = audioUrl;
         setCurrentMessage(message);
         URLRef.current = audioUrl;
-        // togglePlay(audioPlayerRef.current)
         audioPlayerRef.current.play();
         setIsPlaying(true);
       })
       .catch(err => {});
   };
-
-  // const togglePlay = player => {
-  //   if (player.paused) {
-  //   } else {
-  //     player.pause()
-  //     setIsPlaying(false)
-  //   }
-  // }
 
   if (isRedirected) return <Redirect to='/' />;
 
@@ -217,9 +208,8 @@ function Chat({ match, history }) {
               >
                 <FaChevronLeft /> Chats
               </button>
-              <div className=''>
+              <div className='d-flex align-items-center'>
                 <span className='d-block'>{currentUser.name}</span>
-                {/* <small className='d-block'>{currentUser.status}</small> */}
               </div>
             </div>
             <button

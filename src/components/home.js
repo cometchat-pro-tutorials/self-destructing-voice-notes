@@ -20,7 +20,6 @@ function Home({ history }) {
           usersRequest.fetchNext().then(
             userList => {
               setUsers(userList);
-              // console.log({ userList })
             },
             error => {
               console.log('User list fetching failed with error:', error);
@@ -77,15 +76,6 @@ function Home({ history }) {
           const filtered = [..._users].filter(u => u.uid !== selectedUser.uid);
 
           setUsers([selectedUser, ...filtered]);
-        },
-        onMessageDeleted: deletedMessage => {},
-        onMessageRead: messageReceipt => {
-          CometChat.deleteMessage(messageReceipt.messageId).then(
-            msg => {},
-            err => {
-              console.log({ err });
-            }
-          );
         }
       })
     );
