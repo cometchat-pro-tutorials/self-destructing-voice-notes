@@ -76,6 +76,14 @@ function Home({ history }) {
           const filtered = [..._users].filter(u => u.uid !== selectedUser.uid);
 
           setUsers([selectedUser, ...filtered]);
+        },
+        onMessageRead: messageReceipt => {
+          CometChat.deleteMessage(messageReceipt.messageId).then(
+            msg => {},
+            err => {
+              console.log({ err });
+            }
+          );
         }
       })
     );
